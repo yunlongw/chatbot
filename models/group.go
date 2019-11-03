@@ -6,7 +6,7 @@ import (
 
 type Group struct {
 	Model
-	GroupID int    `json:"group_id"`
+	GroupID int64    `json:"group_id"`
 	Title   string `json:"title"`
 }
 
@@ -37,13 +37,34 @@ func ExistGroups(id int) (bool, error) {
 	return false, nil
 }
 
+func ExistGroupsByGroupId(GroupId int64) (bool, error) {
+	var group Group
+	err := db.Select("id").Where("group_id=?", GroupId).First(&group).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return false, err
+	}
+	if group.ID > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+
 func AddGroup(data map[string]interface{}) error {
 	group := Group{
-		GroupID: data["group_id"].(int),
+		GroupID: data["group_id"].(int64),
 		Title:   data["title"].(string),
 	}
 	if err := db.Create(&group).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func GetTotalGroup(maps interface{}) (int, error) {
+	var total int
+	if err := db.Model(&Group{}).Where(maps).Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
 }

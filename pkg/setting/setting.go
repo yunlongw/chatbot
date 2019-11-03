@@ -35,9 +35,9 @@ type Database struct {
 var DataBaseSetting = &Database{}
 var cfg *ini.File
 
-func Setup() {
+func Setup(source string) {
 	var err error
-	cfg, err = ini.Load("config/app.ini")
+	cfg, err = ini.Load(source)
 
 	if err != nil {
 		log.Println(err)

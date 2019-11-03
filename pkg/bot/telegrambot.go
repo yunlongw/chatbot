@@ -58,8 +58,8 @@ var singList map[int][]string
 
 func SetUp() {
 	singList = make(map[int][]string)
-
-	bot, err := tgbotapi.NewBotAPI(setting.BotSetting.ApiToken)
+	var err error
+	bot, err = tgbotapi.NewBotAPI(setting.BotSetting.ApiToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,6 +133,17 @@ func doCommand(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 		msg.ReplyMarkup = numericKeyboard1
 		bot.Send(msg)
+	case "admin":
+		chatMember, err := bot.GetChatAdministrators(tgbotapi.ChatConfig{
+			ChatID:             update.Message.Chat.ID,
+			SuperGroupUsername: update.Message.Chat.Title,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		for _, val := range chatMember{
+			log.Println(val)
+		}
 	}
 }
 
@@ -172,15 +183,21 @@ func NewChatMembers(update tgbotapi.Update) {
 				group := make(map[string]interface{})
 				group["group_id"] = update.Message.Chat.ID
 				group["title"] = update.Message.Chat.Title
-				models.AddGroup(group)
+
+				if ok, _ := models.ExistGroupsByGroupId(update.Message.Chat.ID); ok != true {
+					err := models.AddGroup(group)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 			}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("我是机器人 %s, 很高兴为您服务!", getUserName(user)))
-			bot.Send(msg)
+			_, _ = bot.Send(msg)
 		} else {
 			newUsers = append(newUsers, "@"+getUserName(user))
 			joinedUsers := strings.Join(newUsers, " ")
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
-			bot.Send(msg)
+			_, _ = bot.Send(msg)
 		}
 	}
 }
