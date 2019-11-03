@@ -218,14 +218,25 @@ func NewChatMembers(update tgbotapi.Update) {
 
 					user, _ := AdminList(update.Message.Chat.ID)
 					log.Println(user)
-					maps := make(map[string]interface{})
-					maps["group_id"] = update.Message.Chat.ID
-					maps["admin_id"] = user.ID
+
+				}
+
+				maps := make(map[string]interface{})
+				maps["group_id"] = update.Message.Chat.ID
+				maps["admin_id"] = user.ID
+
+				ok, err := models.ExistAdminsGroups(maps)
+				if err != nil {
+					log.Println(err)
+				}
+
+				if ok != true {
 					err = models.AddAdminsGroups(maps)
 					if err != nil {
-					   log.Println(err)
+						log.Println(err)
 					}
 				}
+
 			}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("我是机器人 %s, 很高兴为您服务!", getUserName(user)))
 			_, _ = bot.Send(msg)

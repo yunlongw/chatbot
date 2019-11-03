@@ -6,11 +6,11 @@ import (
 )
 
 func TestAddAdminsGroups(t *testing.T) {
-	var group_id int64 = -565656
-	//var admin_id int = 56564165
+	var groupId int64 = -565656
+	var adminId int = 56564165
 	maps := make(map[string]interface{})
-	maps["group_id"] = group_id
-	maps["admin_id"] = 5656
+	maps["group_id"] = groupId
+	maps["admin_id"] = adminId
 	err := models.AddAdminsGroups(maps)
 	if err != nil {
 		t.Error(err)
@@ -18,12 +18,11 @@ func TestAddAdminsGroups(t *testing.T) {
 }
 
 func TestExistAdminsGroups(t *testing.T) {
-	var group_id int64 = -565656
-	var admin_id int = 56564165
-	maps := models.AdminsGroups{
-		GroupID: group_id,
-		AdminID: admin_id,
-	}
+	var groupId int64 = -565656
+	var adminId int = 56564165
+	maps := make(map[string]interface{})
+	maps["group_id"] = groupId
+	maps["admin_id"] = adminId
 	_, err := models.ExistAdminsGroups(maps)
 	if err != nil {
 		t.Error(err)

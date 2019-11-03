@@ -7,16 +7,13 @@ type AdminsGroups struct {
 	AdminID int   `json:"admin_id"`
 }
 
-func ExistAdminsGroups(ags AdminsGroups) (bool, error) {
-	var ag AdminsGroups
-	maps := make(map[string]interface{})
-	maps["group_id"] = ags.GroupID
-	maps["admin_id"] = ags.AdminID
-	err := db.Where(maps).First(&ag).Error
+func ExistAdminsGroups(maps map[string]interface{}) (bool, error) {
+	var adminsGroups AdminsGroups
+	err := db.Where(maps).First(&adminsGroups).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return false, err
 	}
-	if ag.GroupID > 0 {
+	if adminsGroups.GroupID > 0 {
 		return true, nil
 	}
 	return false, nil
