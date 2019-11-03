@@ -54,11 +54,13 @@ var numericKeyboard3 = tgbotapi.NewInlineKeyboardMarkup(
 
 var numericKeyboard_setting = tgbotapi.NewInlineKeyboardMarkup(
 	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("setting1", "setting1"),
-		tgbotapi.NewInlineKeyboardButtonData("setting2", "setting2"),
+		tgbotapi.NewInlineKeyboardButtonData("启用", "enable"),
+		tgbotapi.NewInlineKeyboardButtonData("禁用", "disable"),
 		tgbotapi.NewInlineKeyboardButtonData("<<back", "test"),
 	),
 )
+
+var disable bool
 
 var singList map[int][]string
 
@@ -186,11 +188,22 @@ func CallbackQuery(update tgbotapi.Update) {
 		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard3)
 		sendMessage(msg)
 	case "setting":
-		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard_setting)
+		set := getSettingNewInlineKeyboardMarkup()
+		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
 		sendMessage(msg)
 	case "sign":
 		_, signMsg := userSign(*update.CallbackQuery.From)
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, signMsg)
+		sendMessage(msg)
+	case "enable":
+		disable = true
+		set := getSettingNewInlineKeyboardMarkup()
+		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
+		sendMessage(msg)
+	case "disable":
+		disable = false
+		set := getSettingNewInlineKeyboardMarkup()
+		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
 		sendMessage(msg)
 	default:
 		apiResponse, _ := bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
@@ -218,7 +231,6 @@ func NewChatMembers(update tgbotapi.Update) {
 
 					user, _ := AdminList(update.Message.Chat.ID)
 					log.Println(user)
-
 				}
 
 				maps := make(map[string]interface{})
@@ -296,4 +308,19 @@ func isSet(s []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func getSettingNewInlineKeyboardMarkup() tgbotapi.InlineKeyboardMarkup {
+	var list []tgbotapi.InlineKeyboardButton
+	if disable == true {
+		list = append(list, tgbotapi.NewInlineKeyboardButtonData("启用", "disable"))
+	} else {
+		list = append(list, tgbotapi.NewInlineKeyboardButtonData("禁用", "enable"))
+	}
+	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
+	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试2", "test22"))
+	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试3", "test33"))
+	list = append(list, tgbotapi.NewInlineKeyboardButtonData("<<back", "test"))
+
+	return tgbotapi.NewInlineKeyboardMarkup(list)
 }

@@ -1,9 +1,11 @@
 package models_test
 
 import (
+	"fmt"
 	"telegram-assistant-bot/models"
 	"telegram-assistant-bot/pkg/setting"
 	"testing"
+	"time"
 )
 
 const SourceIni = "../config/app.ini"
@@ -25,7 +27,6 @@ func TestAddGroup(t *testing.T) {
 		t.Error(err)
 	}
 }
-
 
 func TestGetGroups(t *testing.T) {
 	maps := make(map[string]interface{})
@@ -57,7 +58,7 @@ func TestGetTotalGroup(t *testing.T) {
 	}
 }
 
-func TestTotalCheck(t *testing.T){
+func TestTotalCheck(t *testing.T) {
 	maps := make(map[string]interface{})
 	groups, err := models.GetGroups(0, 1000, maps)
 	if err != nil {
@@ -73,5 +74,19 @@ func TestTotalCheck(t *testing.T){
 
 	if groupsLen > total {
 		t.Error("数量不一致")
+	}
+}
+
+func TestSetGroupSetting(t *testing.T) {
+	//maps := make(map[string]interface{})
+	//maps["group_id"] = "groupId"
+	//maps["key"] = "key"
+	b, err := models.SetGroupSetting(-5656565, "jinyin", fmt.Sprintf("%d", time.Now().Unix()))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if b == false {
+		t.Error("添加失败")
 	}
 }
