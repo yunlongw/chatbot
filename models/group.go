@@ -6,7 +6,7 @@ import (
 
 type Group struct {
 	Model
-	GroupID int64    `json:"group_id"`
+	GroupID int64  `json:"group_id"`
 	Title   string `json:"title"`
 }
 
@@ -48,7 +48,6 @@ func ExistGroupsByGroupId(GroupId int64) (bool, error) {
 	}
 	return false, nil
 }
-
 
 func AddGroup(data map[string]interface{}) error {
 	group := Group{

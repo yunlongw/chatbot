@@ -13,7 +13,13 @@ import (
 )
 
 const (
-	welcome     = `Welcome to test chat! We can help in English 🇬🇧`
+	welcome  = `Welcome to test chat! We can help in English 🇬🇧`
+	chatInfo = `
+create: 
+%s
+admin:
+%s
+`
 )
 
 const (
@@ -135,15 +141,31 @@ func doCommand(update tgbotapi.Update) {
 		bot.Send(msg)
 	case "admin":
 		chatMember, err := bot.GetChatAdministrators(tgbotapi.ChatConfig{
-			ChatID:             update.Message.Chat.ID,
-			SuperGroupUsername: update.Message.Chat.Title,
+			ChatID: update.Message.Chat.ID,
 		})
 		if err != nil {
 			log.Println(err)
 		}
-		for _, val := range chatMember{
-			log.Println(val)
+
+		var create tgbotapi.User
+		var administrators []*tgbotapi.User
+		var users []string
+
+		for _, val := range chatMember {
+			if val.Status == "creator" {
+				create = *val.User
+			}
+			if val.Status == "administrator" {
+				administrators = append(administrators, val.User)
+				users = append(users, getUserName(*val.User))
+			}
 		}
+		joinedUsers := strings.Join(users, " \n")
+		str := fmt.Sprintf(chatInfo, getUserName(create), joinedUsers)
+		log.Println(str)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, str)
+		sendMessage(msg)
+
 	}
 }
 
