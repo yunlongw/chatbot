@@ -140,33 +140,37 @@ func doCommand(update tgbotapi.Update) {
 		msg.ReplyMarkup = numericKeyboard1
 		bot.Send(msg)
 	case "admin":
-		chatMember, err := bot.GetChatAdministrators(tgbotapi.ChatConfig{
-			ChatID: update.Message.Chat.ID,
-		})
-		if err != nil {
-			log.Println(err)
-		}
-
-		var create tgbotapi.User
-		var administrators []*tgbotapi.User
+		create, administrators := AdminList(update.Message.Chat.ID)
 		var users []string
-
-		for _, val := range chatMember {
-			if val.Status == "creator" {
-				create = *val.User
-			}
-			if val.Status == "administrator" {
-				administrators = append(administrators, val.User)
-				users = append(users, getUserName(*val.User))
-			}
+		for _, v := range administrators {
+			users = append(users, getUserName(*v))
 		}
-		joinedUsers := strings.Join(users, " \n")
-		str := fmt.Sprintf(chatInfo, getUserName(create), joinedUsers)
+		userListString := strings.Join(users, " \n")
+		str := fmt.Sprintf(chatInfo, getUserName(create), userListString)
 		log.Println(str)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, str)
 		sendMessage(msg)
-
 	}
+}
+
+func AdminList(ChatID int64) (tgbotapi.User, []*tgbotapi.User) {
+	chatMember, err := bot.GetChatAdministrators(tgbotapi.ChatConfig{
+		ChatID: ChatID,
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	var create tgbotapi.User
+	var administrators []*tgbotapi.User
+	for _, val := range chatMember {
+		if val.Status == "creator" {
+			create = *val.User
+		}
+		if val.Status == "administrator" {
+			administrators = append(administrators, val.User)
+		}
+	}
+	return create, administrators
 }
 
 func LeftChatMember(update tgbotapi.Update) (tgbotapi.Message, error) {
@@ -210,6 +214,16 @@ func NewChatMembers(update tgbotapi.Update) {
 					err := models.AddGroup(group)
 					if err != nil {
 						log.Println(err)
+					}
+
+					user, _ := AdminList(update.Message.Chat.ID)
+					log.Println(user)
+					maps := make(map[string]interface{})
+					maps["group_id"] = update.Message.Chat.ID
+					maps["admin_id"] = user.ID
+					err = models.AddAdminsGroups(maps)
+					if err != nil {
+					   log.Println(err)
 					}
 				}
 			}
