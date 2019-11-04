@@ -85,16 +85,19 @@ func SetUp() {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	http.Handle("/captcha/", captcha.Server(captcha.StdWidth, captcha.StdHeight))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data := make(map[string]interface{})
 		data["code"] = "200"
+		id := captcha.NewLen(4)
+		url := setting.BotSetting.HttpServer + "captcha/" + id + ".png"
+		data["url"] = url
 		jsonStr, err := json.Marshal(data)
 		if err != nil {
 			panic(err)
 		}
 		w.Write([]byte(jsonStr))
 	})
+	http.Handle("/captcha/", captcha.Server(captcha.StdWidth, captcha.StdHeight))
 
 	_, err = bot.SetWebhook(tgbotapi.NewWebhook(setting.BotSetting.HttpServer + bot.Token))
 	if err != nil {
@@ -321,6 +324,10 @@ func NewChatMembers(update tgbotapi.Update) {
 			messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
 			sendMessage(messageWithPhoto)
 
+			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(Verfily, getUserName(user)))
+			mm := tgbotapi.NewMessage(update.Message.Chat.ID, "请完成验证")
+			mm.ReplyMarkup = nKeyboard1
+			sendMessage(mm)
 
 			//newUsers = append(newUsers, "@"+getUserName(user))
 			//joinedUsers := strings.Join(newUsers, " ")
@@ -330,6 +337,23 @@ func NewChatMembers(update tgbotapi.Update) {
 		}
 	}
 }
+
+var nKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL("看不清，换一个", "reset"),
+	),
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL("人工通过", "en"),
+		tgbotapi.NewInlineKeyboardButtonURL("人工拒绝", "di"),
+	),
+)
+
+const Verfily = `
+针对 %s 的验证码
+
+您好，请在75秒内输入上图4
+数字的验证码。
+`
 
 var Keyboard = tgbotapi.NewInlineKeyboardMarkup(
 	tgbotapi.NewInlineKeyboardRow(
