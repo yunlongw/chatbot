@@ -31,7 +31,7 @@ func SetGroupSetting(groupId int64, key string, val string) (bool, error) {
 	}
 
 	if groupSetting.Key != "" {
-		err := updateGroupSetting(groupSetting.ID, val)
+		err := updateGroupSetting(maps, val)
 		if err != nil {
 			return false, err
 		}
@@ -45,8 +45,8 @@ func SetGroupSetting(groupId int64, key string, val string) (bool, error) {
 	return true, nil
 }
 
-func updateGroupSetting(id int, val string) error {
-	if err := db.Model(&GroupSetting{}).Where("id=?", id).Update("values", val).Error; err != nil {
+func updateGroupSetting(maps map[string]interface{}, val string) error {
+	if err := db.Model(&GroupSetting{}).Where(maps).Update("values", val).Error; err != nil {
 		return err
 	}
 	return nil
