@@ -322,12 +322,14 @@ func NewChatMembers(update tgbotapi.Update) {
 			}
 			bytes := tgbotapi.FileBytes{Name: "image.jpg", Bytes: content}
 			messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
+			messageWithPhoto.Caption =  fmt.Sprintf(Verfily, "@"+getUserName(user))
+			messageWithPhoto.ReplyMarkup = nKeyboard1
 			sendMessage(messageWithPhoto)
 
 			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(Verfily, getUserName(user)))
-			mm := tgbotapi.NewMessage(update.Message.Chat.ID, "请完成验证")
-			mm.ReplyMarkup = nKeyboard1
-			sendMessage(mm)
+			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, "请完成验证")
+			//mm.ReplyMarkup = nKeyboard1
+			//sendMessage(mm)
 
 			//newUsers = append(newUsers, "@"+getUserName(user))
 			//joinedUsers := strings.Join(newUsers, " ")
@@ -340,11 +342,11 @@ func NewChatMembers(update tgbotapi.Update) {
 
 var nKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
 	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonURL("看不清，换一个", "reset"),
+		tgbotapi.NewInlineKeyboardButtonData("看不清，换一个", "reset"),
 	),
 	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonURL("人工通过", "en"),
-		tgbotapi.NewInlineKeyboardButtonURL("人工拒绝", "di"),
+		tgbotapi.NewInlineKeyboardButtonData("人工通过", "en"),
+		tgbotapi.NewInlineKeyboardButtonData("人工拒绝", "di"),
 	),
 )
 
