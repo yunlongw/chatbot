@@ -142,9 +142,10 @@ func messageDispose(updates tgbotapi.UpdatesChannel) {
 func doCommand(update tgbotapi.Update) {
 	switch update.Message.Command() {
 	case "mean":
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		msg.ReplyMarkup = numericKeyboard1
-		bot.Send(msg)
+		message := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(MessageModel, "主菜单"))
+		message.ReplyToMessageID = update.Message.From.ID
+		message.ReplyMarkup = numericKeyboard1
+		sendMessage(message)
 	case "admin":
 		create, administrators := AdminList(update.Message.Chat.ID)
 		var users []string
@@ -183,6 +184,12 @@ func LeftChatMember(update tgbotapi.Update) (tgbotapi.Message, error) {
 	return bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%s left this group, Bye,Bye!", update.Message.LeftChatMember.UserName)))
 }
 
+const MessageModel = `通过复选按钮，调整设置。提醒：建议看官网首页对相关功能的更详细说明。
+
+刚刚进行的更改：%s
+
+推荐设置：启用审核并信任管理，不使用记录模式。静音模式避免打扰其他人，私信设置让机器人通过私聊发送设置菜单。`
+
 func CallbackQuery(update tgbotapi.Update) {
 	switch update.CallbackQuery.Data {
 	case "mean":
@@ -206,8 +213,9 @@ func CallbackQuery(update tgbotapi.Update) {
 		}
 		if ok == true {
 			set := getSettingNewInlineKeyboardMarkup(update)
-			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
-			sendMessage(msg)
+			message := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, fmt.Sprintf(MessageModel, "启用"))
+			message.ReplyMarkup = &set
+			sendMessage(message)
 		}
 
 	case "disable":
@@ -217,8 +225,9 @@ func CallbackQuery(update tgbotapi.Update) {
 		}
 		if ok == true {
 			set := getSettingNewInlineKeyboardMarkup(update)
-			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
-			sendMessage(msg)
+			message := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, fmt.Sprintf(MessageModel, "禁用"))
+			message.ReplyMarkup = &set
+			sendMessage(message)
 		}
 	default:
 		apiResponse, _ := bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
@@ -326,43 +335,22 @@ func isSet(s []string, val string) bool {
 }
 
 func getSettingNewInlineKeyboardMarkup(update tgbotapi.Update) tgbotapi.InlineKeyboardMarkup {
-	var list []tgbotapi.InlineKeyboardButton
-
 	maps, err := models.GetGroupSettingByGroupIDToHashMap(update.CallbackQuery.Message.Chat.ID)
 	if err != nil {
 		log.Println(err)
 	}
-
-	if maps[Setting_Verify] == "1" {
-		list = append(list, tgbotapi.NewInlineKeyboardButtonData("启用", "disable"))
-	} else {
-		list = append(list, tgbotapi.NewInlineKeyboardButtonData("禁用", "enable"))
-	}
-	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
-	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试2", "test22"))
-	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试3", "test33"))
-	list = append(list, tgbotapi.NewInlineKeyboardButtonData("<<back", "test"))
-
 	buttonrows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
 	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
 	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
 
-	if maps[Setting_Verify] == "1" {
-		buttonrows[0] = append(buttonrows[0],  tgbotapi.NewInlineKeyboardButtonData("启用", "disable"))
+	if maps[Setting_Verify] == "0" {
+		buttonrows[0] = append(buttonrows[0], tgbotapi.NewInlineKeyboardButtonData("□审核开关", "enable"))
 	} else {
-		buttonrows[0] = append(buttonrows[0],  tgbotapi.NewInlineKeyboardButtonData("禁用", "enable"))
+		buttonrows[0] = append(buttonrows[0], tgbotapi.NewInlineKeyboardButtonData("■审核开关", "disable"))
 	}
 	buttonrows[1] = append(buttonrows[1], tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
-	buttonrows[2] = append(buttonrows[2], tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
+	buttonrows[2] = append(buttonrows[2], tgbotapi.NewInlineKeyboardButtonData("<<back", "test"))
 
 	return tgbotapi.NewInlineKeyboardMarkup(buttonrows...)
 }
-
-var numericKeyboard122 = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonURL("1.com", "http://1.com"),
-		tgbotapi.NewInlineKeyboardButtonSwitch("2sw", "open 2"),
-		tgbotapi.NewInlineKeyboardButtonData("test", "test"),
-	),
-)
