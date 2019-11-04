@@ -9,6 +9,7 @@ import (
 )
 
 const SourceIni = "../config/app.ini"
+const ChatId  = -5656565
 
 func init() {
 	//配置加载
@@ -78,15 +79,28 @@ func TestTotalCheck(t *testing.T) {
 }
 
 func TestSetGroupSetting(t *testing.T) {
-	//maps := make(map[string]interface{})
-	//maps["group_id"] = "groupId"
-	//maps["key"] = "key"
-	b, err := models.SetGroupSetting(-5656565, "jinyin", fmt.Sprintf("%d", time.Now().Unix()))
+	b, err := models.SetGroupSetting(ChatId, fmt.Sprintf("%d", time.Now().YearDay()), fmt.Sprintf("%d", time.Now().Unix()))
 	if err != nil {
 		t.Error(err)
 	}
 
 	if b == false {
 		t.Error("添加失败")
+	}
+}
+
+func TestGetGroupSettings(t *testing.T) {
+	maps := make(map[string]interface{})
+	maps["group_id"] = ChatId
+	_, err := models.GetGroupSettings(maps)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestGetGroupSettingByGroupIDToHashMap(t *testing.T) {
+	_ , err := models.GetGroupSettingByGroupIDToHashMap(ChatId)
+	if err != nil {
+	    t.Error(err)
 	}
 }

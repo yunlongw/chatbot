@@ -23,6 +23,10 @@ admin:
 )
 
 const (
+	Setting_Verify = "DefaultVerify"
+)
+
+const (
 	// Default number of digits in captcha solution.
 	DefaultLen = 6
 	// The number of captchas created that triggers garbage collection used
@@ -188,7 +192,7 @@ func CallbackQuery(update tgbotapi.Update) {
 		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard3)
 		sendMessage(msg)
 	case "setting":
-		set := getSettingNewInlineKeyboardMarkup()
+		set := getSettingNewInlineKeyboardMarkup(update)
 		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
 		sendMessage(msg)
 	case "sign":
@@ -196,15 +200,26 @@ func CallbackQuery(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, signMsg)
 		sendMessage(msg)
 	case "enable":
-		disable = true
-		set := getSettingNewInlineKeyboardMarkup()
-		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
-		sendMessage(msg)
+		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, Setting_Verify, "1")
+		if err != nil {
+			fmt.Println(err)
+		}
+		if ok == true {
+			set := getSettingNewInlineKeyboardMarkup(update)
+			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
+			sendMessage(msg)
+		}
+
 	case "disable":
-		disable = false
-		set := getSettingNewInlineKeyboardMarkup()
-		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
-		sendMessage(msg)
+		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, Setting_Verify, "0")
+		if err != nil {
+			fmt.Println(err)
+		}
+		if ok == true {
+			set := getSettingNewInlineKeyboardMarkup(update)
+			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, set)
+			sendMessage(msg)
+		}
 	default:
 		apiResponse, _ := bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
 		printJson(apiResponse)
@@ -310,9 +325,15 @@ func isSet(s []string, val string) bool {
 	return false
 }
 
-func getSettingNewInlineKeyboardMarkup() tgbotapi.InlineKeyboardMarkup {
+func getSettingNewInlineKeyboardMarkup(update tgbotapi.Update) tgbotapi.InlineKeyboardMarkup {
 	var list []tgbotapi.InlineKeyboardButton
-	if disable == true {
+
+	maps, err := models.GetGroupSettingByGroupIDToHashMap(update.CallbackQuery.Message.Chat.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if maps[Setting_Verify] == "1" {
 		list = append(list, tgbotapi.NewInlineKeyboardButtonData("启用", "disable"))
 	} else {
 		list = append(list, tgbotapi.NewInlineKeyboardButtonData("禁用", "enable"))

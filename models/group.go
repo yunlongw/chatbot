@@ -24,20 +24,20 @@ func SetGroupSetting(groupId int64, key string, val string) (bool, error) {
 	maps := make(map[string]interface{})
 	maps["group_id"] = groupId
 	maps["key"] = key
-	groupSetting, err := getGroupSetting(groupId, key)
+	groupSetting, err := FindGroupSetting(maps)
 	if err != nil {
 		log.Println(err)
 		return false, err
 	}
 
 	if groupSetting.Key != "" {
-		err := updateGroupSetting(maps, val)
+		err := UpdateGroupSetting(maps, val)
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	} else {
-		err := addGroupSetting(groupId, key, val)
+		err := AddGroupSetting(groupId, key, val)
 		if err != nil {
 			return false, err
 		}
@@ -45,14 +45,14 @@ func SetGroupSetting(groupId int64, key string, val string) (bool, error) {
 	return true, nil
 }
 
-func updateGroupSetting(maps map[string]interface{}, val string) error {
+func UpdateGroupSetting(maps map[string]interface{}, val string) error {
 	if err := db.Model(&GroupSetting{}).Where(maps).Update("values", val).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func addGroupSetting(groupId int64, key string, val interface{}) error {
+func AddGroupSetting(groupId int64, key string, val interface{}) error {
 	groupSetting := &GroupSetting{
 		GroupID: groupId,
 		Key:     key,
@@ -65,16 +65,36 @@ func addGroupSetting(groupId int64, key string, val interface{}) error {
 	return nil
 }
 
-func getGroupSetting(groupId int64, key string) (GroupSetting, error) {
+func FindGroupSetting(maps map[string]interface{}) (GroupSetting, error) {
 	var groupSetting GroupSetting
-	maps := make(map[string]interface{})
-	maps["group_id"] = groupId
-	maps["key"] = key
 	err := db.Where(maps).First(&groupSetting).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return groupSetting, err
 	}
 	return groupSetting, nil
+}
+
+func GetGroupSettings(maps map[string]interface{}) ([]GroupSetting, error) {
+	var groupSetting []GroupSetting
+	err := db.Where(maps).Find(&groupSetting).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return groupSetting, err
+	}
+	return groupSetting, nil
+}
+
+func GetGroupSettingByGroupIDToHashMap(GroupId int64) (map[string]interface{} , error) {
+	maps := make(map[string]interface{})
+	sets := make(map[string]interface{})
+	maps["group_id"] = GroupId
+	groupSetting, err := GetGroupSettings(maps)
+	if err != nil {
+		return sets, err
+	}
+	for _, v := range groupSetting {
+		sets[v.Key] = v.Values
+	}
+	return sets, nil
 }
 
 func ExistGroupSetting(groupId int64, key string) (bool, error) {
