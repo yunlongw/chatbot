@@ -2,6 +2,8 @@ package models_test
 
 import (
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"reflect"
 	"telegram-assistant-bot/models"
 	"telegram-assistant-bot/pkg/setting"
 	"testing"
@@ -103,4 +105,14 @@ func TestGetGroupSettingByGroupIDToHashMap(t *testing.T) {
 	if err != nil {
 	    t.Error(err)
 	}
+}
+
+func TestSetUp(t *testing.T) {
+	var number3 = tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL("1.com", "http://1.com"),
+		tgbotapi.NewInlineKeyboardButtonSwitch("2sw", "open 2"),
+		tgbotapi.NewInlineKeyboardButtonData("test", "test"),
+	)
+
+	fmt.Println("type:", reflect.TypeOf(number3))
 }

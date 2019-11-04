@@ -343,5 +343,26 @@ func getSettingNewInlineKeyboardMarkup(update tgbotapi.Update) tgbotapi.InlineKe
 	list = append(list, tgbotapi.NewInlineKeyboardButtonData("测试3", "test33"))
 	list = append(list, tgbotapi.NewInlineKeyboardButtonData("<<back", "test"))
 
-	return tgbotapi.NewInlineKeyboardMarkup(list)
+	buttonrows := make([][]tgbotapi.InlineKeyboardButton, 0)
+	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
+	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
+	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
+
+	if maps[Setting_Verify] == "1" {
+		buttonrows[0] = append(buttonrows[0],  tgbotapi.NewInlineKeyboardButtonData("启用", "disable"))
+	} else {
+		buttonrows[0] = append(buttonrows[0],  tgbotapi.NewInlineKeyboardButtonData("禁用", "enable"))
+	}
+	buttonrows[1] = append(buttonrows[1], tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
+	buttonrows[2] = append(buttonrows[2], tgbotapi.NewInlineKeyboardButtonData("测试1", "test11"))
+
+	return tgbotapi.NewInlineKeyboardMarkup(buttonrows...)
 }
+
+var numericKeyboard122 = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL("1.com", "http://1.com"),
+		tgbotapi.NewInlineKeyboardButtonSwitch("2sw", "open 2"),
+		tgbotapi.NewInlineKeyboardButtonData("test", "test"),
+	),
+)
