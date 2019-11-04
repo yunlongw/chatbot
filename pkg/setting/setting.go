@@ -9,6 +9,7 @@ import (
 type Bot struct {
 	ChatID int
 	ApiToken string
+	HttpServer string
 }
 
 var BotSetting = &Bot{}

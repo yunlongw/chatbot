@@ -3,9 +3,12 @@ package bot
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dchest/captcha"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/url"
 	"strings"
 	"telegram-assistant-bot/models"
 	"telegram-assistant-bot/pkg/setting"
@@ -82,7 +85,18 @@ func SetUp() {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	_, err = bot.SetWebhook(tgbotapi.NewWebhook("https://robotslayer.org/" + bot.Token))
+	http.Handle("/captcha/", captcha.Server(captcha.StdWidth, captcha.StdHeight))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		data := make(map[string]interface{})
+		data["code"] = "200"
+		jsonStr, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		w.Write([]byte(jsonStr))
+	})
+
+	_, err = bot.SetWebhook(tgbotapi.NewWebhook(setting.BotSetting.HttpServer + bot.Token))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -238,7 +252,7 @@ func CallbackQuery(update tgbotapi.Update) {
 
 //  新用户处理
 func NewChatMembers(update tgbotapi.Update) {
-	var newUsers []string
+	//var newUsers []string
 	for _, user := range *update.Message.NewChatMembers {
 		// 加入的机器人本身
 		if user.ID == setting.BotSetting.ChatID {
@@ -277,22 +291,60 @@ func NewChatMembers(update tgbotapi.Update) {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("我是机器人 %s, 很高兴为您服务!", getUserName(user)))
 			_, _ = bot.Send(msg)
 		} else {
-			newUsers = append(newUsers, "@"+getUserName(user))
-			joinedUsers := strings.Join(newUsers, " ")
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
-			_, _ = bot.Send(msg)
+			//TODO 发送验证码
+			//TODO 超时设置
+			//TODO 失败拒绝
+			//TODO 成功通过
+			//id := captcha.NewLen(4)
+			//digits := captcha.RandomDigits(4)
+			//captcha.NewImage( id, digits, 30, 30)
+			//file, err := url.Parse("http://cdn2.jianshu.io/assets/default_avatar/12-aeeea4bedf10f2a12c0d50d626951489.jpg")
+			//if err != nil {
+			//    panic(err)
+			//}
+
+			id := captcha.NewLen(4)
+			url := setting.BotSetting.HttpServer + "captcha/" + id + ".png"
+			fmt.Println(url)
+			//res, err := http.Get("http://cdn2.jianshu.io/assets/default_avatar/12-aeeea4bedf10f2a12c0d50d626951489.jpg")
+			res, err := http.Get(url)
+
+			if err != nil {
+				panic(err)
+			}
+
+			content, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				// error handling...
+			}
+			bytes := tgbotapi.FileBytes{Name: "image.jpg", Bytes: content}
+			messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
+			sendMessage(messageWithPhoto)
+
+
+			//newUsers = append(newUsers, "@"+getUserName(user))
+			//joinedUsers := strings.Join(newUsers, " ")
+			//msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
+			//msg.ReplyMarkup = Keyboard
+			//_, _ = bot.Send(msg)
 		}
 	}
 }
 
+var Keyboard = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("重新生成二维码", "recreate"),
+	),
+)
+
 func sendMessage(msg tgbotapi.Chattable) bool {
 	if msg, err := bot.Send(msg); err != nil {
 		printJson(msg)
-		return true
-	} else {
-		printJson(msg)
 		log.Println(err)
 		return false
+	} else {
+		printJson(msg)
+		return true
 	}
 }
 
