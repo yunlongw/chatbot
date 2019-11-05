@@ -166,9 +166,11 @@ func verifyAction(update tgbotapi.Update) {
 		log.Printf("id:%s", id)
 		log.Printf("code:%s", []byte(code))
 		if captcha.VerifyString(id, code) {
-			sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证通过"))
+			//sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证通过"))
+			ch.Chan(update.Message.From.ID, true)
 		} else {
-			sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证失败"))
+			//sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证失败"))
+			ch.Chan(update.Message.From.ID, false)
 		}
 	}
 }
@@ -311,29 +313,7 @@ func newChatMembers(update tgbotapi.Update) {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("我是机器人 %s, 很高兴为您服务!", getUserName(user)))
 			_, _ = bot.Send(msg)
 		} else {
-			//TODO 发送验证码
-			//TODO 超时设置
-			//TODO 失败拒绝
-			//TODO 成功通过
-			//id := captcha.NewLen(4)
-			//digits := captcha.RandomDigits(4)
-			//captcha.NewImage( id, digits, 30, 30)
-			//file, err := url.Parse("http://cdn2.jianshu.io/assets/default_avatar/12-aeeea4bedf10f2a12c0d50d626951489.jpg")
-			//if err != nil {
-			//    panic(err)
-			//}
 			verifyData(update, user)
-
-			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(Verfily, getUserName(user)))
-			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, "请完成验证")
-			//mm.ReplyMarkup = nKeyboard1
-			//sendMessage(mm)
-
-			//newUsers = append(newUsers, "@"+getUserName(user))
-			//joinedUsers := strings.Join(newUsers, " ")
-			//msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
-			//msg.ReplyMarkup = Keyboard
-			//_, _ = bot.Send(msg)
 		}
 	}
 }
@@ -354,9 +334,29 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 	messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
 	messageWithPhoto.Caption = fmt.Sprintf(Verfily, "@"+getUserName(user), 6, 50)
 	messageWithPhoto.ReplyMarkup = nKeyboard1
-	sendMessage(messageWithPhoto)
+	msg, err := bot.Send(messageWithPhoto)
+	if err != nil {
+		log.Println(err)
+	}
 	setVerify(user, id)
+	ch.SetChan(user.ID)
+	go func() {
+		select {
+		case <-time.After(5 * time.Second):
+			fmt.Println("超时测试")
+			//sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
+		case m := <- ch.m[user.ID]:
+			if m == true {
+				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证通过"))
+			}else {
+				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证失败"))
+			}
+
+		}
+	}()
 }
+
+var ch = NewChanMap()
 
 func setVerify(user tgbotapi.User, id string) bool {
 	var key = fmt.Sprintf("verify:%d", user.ID)
