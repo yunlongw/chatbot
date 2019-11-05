@@ -342,14 +342,18 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 		select {
 		case <-time.After(5 * time.Second):
 			fmt.Println("超时测试")
-			//sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
+			sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
+			deleteVerify(user,id)
+			ch.DeleteChan(update.Message.Chat.ID, user.ID)
+			//todo 移除对话框
 		case m := <- ch.m[update.Message.Chat.ID][user.ID]:
 			if m == true {
 				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证通过"))
 			}else {
 				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证失败"))
 			}
-
+			deleteVerify(user,id)
+			ch.DeleteChan(update.Message.Chat.ID, user.ID)
 		}
 	}()
 }
@@ -370,6 +374,17 @@ func setVerify(user tgbotapi.User, id string) bool {
 	}
 	return true
 }
+
+func deleteVerify(user tgbotapi.User, id string) bool {
+	var key = fmt.Sprintf("verify:%d", user.ID)
+	b, err := gredis.Delete(key)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return b
+}
+
 
 func getVerify(user tgbotapi.User) (string, error) {
 	var v interface{}
