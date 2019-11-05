@@ -166,11 +166,9 @@ func verifyAction(update tgbotapi.Update) {
 		log.Printf("id:%s", id)
 		log.Printf("code:%s", []byte(code))
 		if captcha.VerifyString(id, code) {
-			//sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证通过"))
-			ch.Chan(update.Message.From.ID, true)
+			ch.Chan(update.Message.Chat.ID,update.Message.From.ID, true)
 		} else {
-			//sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证失败"))
-			ch.Chan(update.Message.From.ID, false)
+			ch.Chan(update.Message.Chat.ID,update.Message.From.ID, false)
 		}
 	}
 }
@@ -339,13 +337,13 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 		log.Println(err)
 	}
 	setVerify(user, id)
-	ch.SetChan(user.ID)
+	ch.SetChan(update.Message.Chat.ID,user.ID)
 	go func() {
 		select {
 		case <-time.After(5 * time.Second):
 			fmt.Println("超时测试")
 			//sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
-		case m := <- ch.m[user.ID]:
+		case m := <- ch.m[update.Message.Chat.ID][user.ID]:
 			if m == true {
 				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证通过"))
 			}else {
@@ -356,7 +354,12 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 	}()
 }
 
-var ch = NewChanMap()
+const PassMessage =`您已通过验证。
+单码用时：%d 秒
+You have passed the CAPTCHA test.
+Time used: %d seconds.`
+
+var ch = NewGroupVerifyChanMap()
 
 func setVerify(user tgbotapi.User, id string) bool {
 	var key = fmt.Sprintf("verify:%d", user.ID)
@@ -433,7 +436,7 @@ func userSign(user tgbotapi.User) (b bool, signMsg string) {
 
 func getUserName(user tgbotapi.User) string {
 	if user.UserName == "" {
-		return fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+		return fmt.Sprintf("%s", user.FirstName)
 	}
 	return user.UserName
 }

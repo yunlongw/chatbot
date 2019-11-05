@@ -1,21 +1,36 @@
 package bot
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
-type ChanMap struct {
-	m map[int]chan bool
+type GroupVerifyChanMap struct {
+	m map[int64]map[int]chan bool
 }
 
-func NewChanMap() *ChanMap {
-	return &ChanMap{m: make(map[int]chan bool)}
+func NewGroupVerifyChanMap() *GroupVerifyChanMap {
+	return &GroupVerifyChanMap{m: make(map[int64]map[int]chan bool)}
 }
 
-func (cm *ChanMap) SetChan(key int)  {
-	log.Printf("初始化:%d", key)
-	cm.m[key] = make(chan bool)
+func (cm *GroupVerifyChanMap) SetChan(GroupID int64, key int) {
+	log.Printf("初始化:%d,%d",GroupID, key)
+	if m, ok := cm.m[GroupID] ; ok  {
+		if _, o := m[key] ; o != true {
+			m[key] = make(chan bool)
+		}
+	}else {
+		boils := make(map[int]chan bool)
+		boils[key] = make(chan bool)
+		cm.m[GroupID] = boils
+	}
+	fmt.Println(cm)
 }
 
-func (cm *ChanMap) Chan(key int, b bool) {
-	log.Printf("赋值:%d, %v", key, b)
-	cm.m[key] <- b
+func (cm *GroupVerifyChanMap) Chan(GroupID int64, key int, b bool) {
+	cm.m[GroupID][key] <- b
+}
+
+func (cm *GroupVerifyChanMap) DeleteChan(GroupID int64, key int) {
+	delete(cm.m[GroupID],key)
 }
