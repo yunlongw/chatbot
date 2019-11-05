@@ -166,8 +166,10 @@ func verifyAction(update tgbotapi.Update) {
 		log.Printf("id:%s", id)
 		log.Printf("code:%s", []byte(code))
 		if captcha.VerifyString(id, code) {
+			fmt.Println("成功")
 			ch.Chan(update.Message.Chat.ID,update.Message.From.ID, true)
 		} else {
+			fmt.Println("失败")
 			ch.Chan(update.Message.Chat.ID,update.Message.From.ID, false)
 		}
 	}
@@ -340,7 +342,7 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 	ch.SetChan(update.Message.Chat.ID,user.ID)
 	go func() {
 		select {
-		case <-time.After(5 * time.Second):
+		case <-time.After(50 * time.Second):
 			fmt.Println("超时测试")
 			sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
 			deleteVerify(user,id)
