@@ -344,10 +344,11 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 		select {
 		case <-time.After(50 * time.Second):
 			fmt.Println("超时测试")
-			sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证"))
+			sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "超时验证 timeout"))
 			deleteVerify(user,id)
 			ch.DeleteChan(update.Message.Chat.ID, user.ID)
 			//todo 移除对话框
+			deleteVerifyMessage(update.Message.Chat.ID, update.Message.MessageID)
 		case m := <- ch.m[update.Message.Chat.ID][user.ID]:
 			if m == true {
 				sendMessage(tgbotapi.NewEditMessageCaption(update.Message.Chat.ID, msg.MessageID, "验证通过"))
@@ -356,6 +357,16 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 			}
 			deleteVerify(user,id)
 			ch.DeleteChan(update.Message.Chat.ID, user.ID)
+			deleteVerifyMessage(update.Message.Chat.ID, update.Message.MessageID)
+		}
+	}()
+}
+
+func deleteVerifyMessage(chatID int64, messageID int)  {
+	go func() {
+		select {
+			case <- time.After(5* time.Second):
+				sendMessage(tgbotapi.NewDeleteMessage(chatID, messageID))
 		}
 	}()
 }
