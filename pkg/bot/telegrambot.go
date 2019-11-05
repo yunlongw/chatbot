@@ -11,6 +11,7 @@ import (
 	_ "net/url"
 	"strings"
 	"telegram-assistant-bot/models"
+	"telegram-assistant-bot/pkg/gredis"
 	"telegram-assistant-bot/pkg/setting"
 	"time"
 )
@@ -133,6 +134,9 @@ func messageDispose(updates tgbotapi.UpdatesChannel) {
 
 		// 判断常规信息
 		if update.Message != nil {
+			//验证信息
+			verifyAction(update)
+			//captcha.VerifyString()
 			log.Printf("%s", update.Message.Text)
 		}
 
@@ -153,6 +157,19 @@ func messageDispose(updates tgbotapi.UpdatesChannel) {
 			doCommand(update)
 		}
 
+	}
+}
+
+func verifyAction(update tgbotapi.Update) {
+	if id, err := getVerify(*update.Message.From); err == nil {
+		code := update.Message.Text
+		log.Printf("id:%s", id)
+		log.Printf("code:%s", []byte(code))
+		if captcha.VerifyString(id, code) {
+			sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证通过"))
+		} else {
+			sendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, "验证失败"))
+		}
 	}
 }
 
@@ -305,7 +322,6 @@ func newChatMembers(update tgbotapi.Update) {
 			//if err != nil {
 			//    panic(err)
 			//}
-
 			verifyData(update, user)
 
 			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(Verfily, getUserName(user)))
@@ -336,9 +352,35 @@ func verifyData(update tgbotapi.Update, user tgbotapi.User) {
 	}
 	bytes := tgbotapi.FileBytes{Name: "image.jpg", Bytes: content}
 	messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
-	messageWithPhoto.Caption = fmt.Sprintf(Verfily, "@"+getUserName(user))
+	messageWithPhoto.Caption = fmt.Sprintf(Verfily, "@"+getUserName(user), 6, 50)
 	messageWithPhoto.ReplyMarkup = nKeyboard1
 	sendMessage(messageWithPhoto)
+	setVerify(user, id)
+}
+
+func setVerify(user tgbotapi.User, id string) bool {
+	var key = fmt.Sprintf("verify:%d", user.ID)
+	err := gredis.Set(key, id, 50)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
+
+func getVerify(user tgbotapi.User) (string, error) {
+	var v interface{}
+	var key = fmt.Sprintf("verify:%d", user.ID)
+	result, err := gredis.Get(key)
+	json.Unmarshal(result, &v)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	if str, ok := v.(string); ok == true {
+		return str, nil
+	}
+	return "", nil
 }
 
 var nKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
@@ -353,9 +395,8 @@ var nKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
 
 const Verfily = `
 针对 %s 的验证码
-
-您好，请在75秒内输入上图4
-数字的验证码。
+您好，请在 75 秒内输入上图 %d 英文字符验证码(不限大小写，不含数字)。
+Welcome, please input 5-char CAPTCHA above in %d seconds.
 `
 
 var Keyboard = tgbotapi.NewInlineKeyboardMarkup(
