@@ -26,7 +26,7 @@ admin:
 )
 
 const (
-	Setting_Verify = "DefaultVerify"
+	setting_Verify = "DefaultVerify"
 )
 
 const (
@@ -123,7 +123,7 @@ func messageDispose(updates tgbotapi.UpdatesChannel) {
 
 		// 判断回调 ballBackQuery
 		if update.CallbackQuery != nil {
-			CallbackQuery(update)
+			callbackQuery(update)
 		}
 
 		if update.Message == nil {
@@ -139,12 +139,12 @@ func messageDispose(updates tgbotapi.UpdatesChannel) {
 		// 检测加入分组和离开分组
 		if update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup() {
 			if update.Message.NewChatMembers != nil {
-				NewChatMembers(update)
+				newChatMembers(update)
 			}
 
 			// 离开分组判断
 			if update.Message.LeftChatMember != nil {
-				LeftChatMember(update)
+				leftChatMember(update)
 			}
 		}
 
@@ -164,7 +164,7 @@ func doCommand(update tgbotapi.Update) {
 		message.ReplyMarkup = numericKeyboard1
 		sendMessage(message)
 	case "admin":
-		create, administrators := AdminList(update.Message.Chat.ID)
+		create, administrators := adminList(update.Message.Chat.ID)
 		var users []string
 		for _, v := range administrators {
 			users = append(users, getUserName(*v))
@@ -177,7 +177,7 @@ func doCommand(update tgbotapi.Update) {
 	}
 }
 
-func AdminList(ChatID int64) (tgbotapi.User, []*tgbotapi.User) {
+func adminList(ChatID int64) (tgbotapi.User, []*tgbotapi.User) {
 	chatMember, err := bot.GetChatAdministrators(tgbotapi.ChatConfig{
 		ChatID: ChatID,
 	})
@@ -197,7 +197,7 @@ func AdminList(ChatID int64) (tgbotapi.User, []*tgbotapi.User) {
 	return create, administrators
 }
 
-func LeftChatMember(update tgbotapi.Update) (tgbotapi.Message, error) {
+func leftChatMember(update tgbotapi.Update) (tgbotapi.Message, error) {
 	return bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%s left this group, Bye,Bye!", update.Message.LeftChatMember.UserName)))
 }
 
@@ -207,7 +207,7 @@ const MessageModel = `通过复选按钮，调整设置。提醒：建议看官�
 
 推荐设置：启用审核并信任管理，不使用记录模式。静音模式避免打扰其他人，私信设置让机器人通过私聊发送设置菜单。`
 
-func CallbackQuery(update tgbotapi.Update) {
+func callbackQuery(update tgbotapi.Update) {
 	switch update.CallbackQuery.Data {
 	case "mean":
 		msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard1)
@@ -224,7 +224,7 @@ func CallbackQuery(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, signMsg)
 		sendMessage(msg)
 	case "enable":
-		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, Setting_Verify, "1")
+		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, setting_Verify, "1")
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -236,7 +236,7 @@ func CallbackQuery(update tgbotapi.Update) {
 		}
 
 	case "disable":
-		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, Setting_Verify, "0")
+		ok, err := models.SetGroupSetting(update.CallbackQuery.Message.Chat.ID, setting_Verify, "0")
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -254,7 +254,7 @@ func CallbackQuery(update tgbotapi.Update) {
 }
 
 //  新用户处理
-func NewChatMembers(update tgbotapi.Update) {
+func newChatMembers(update tgbotapi.Update) {
 	//var newUsers []string
 	for _, user := range *update.Message.NewChatMembers {
 		// 加入的机器人本身
@@ -270,7 +270,7 @@ func NewChatMembers(update tgbotapi.Update) {
 						log.Println(err)
 					}
 
-					user, _ := AdminList(update.Message.Chat.ID)
+					user, _ := adminList(update.Message.Chat.ID)
 					log.Println(user)
 				}
 
@@ -306,25 +306,7 @@ func NewChatMembers(update tgbotapi.Update) {
 			//    panic(err)
 			//}
 
-			id := captcha.NewLen(4)
-			url := setting.BotSetting.HttpServer + "captcha/" + id + ".png"
-			fmt.Println(url)
-			//res, err := http.Get("http://cdn2.jianshu.io/assets/default_avatar/12-aeeea4bedf10f2a12c0d50d626951489.jpg")
-			res, err := http.Get(url)
-
-			if err != nil {
-				panic(err)
-			}
-
-			content, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				// error handling...
-			}
-			bytes := tgbotapi.FileBytes{Name: "image.jpg", Bytes: content}
-			messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
-			messageWithPhoto.Caption =  fmt.Sprintf(Verfily, "@"+getUserName(user))
-			messageWithPhoto.ReplyMarkup = nKeyboard1
-			sendMessage(messageWithPhoto)
+			verifyData(update, user)
 
 			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(Verfily, getUserName(user)))
 			//mm := tgbotapi.NewMessage(update.Message.Chat.ID, "请完成验证")
@@ -338,6 +320,25 @@ func NewChatMembers(update tgbotapi.Update) {
 			//_, _ = bot.Send(msg)
 		}
 	}
+}
+
+// 验证数据
+func verifyData(update tgbotapi.Update, user tgbotapi.User) {
+	id := captcha.NewLen(6)
+	url := setting.BotSetting.HttpServer + "captcha/" + id + ".png"
+	res, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
+	content, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	bytes := tgbotapi.FileBytes{Name: "image.jpg", Bytes: content}
+	messageWithPhoto := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, bytes)
+	messageWithPhoto.Caption = fmt.Sprintf(Verfily, "@"+getUserName(user))
+	messageWithPhoto.ReplyMarkup = nKeyboard1
+	sendMessage(messageWithPhoto)
 }
 
 var nKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
@@ -422,7 +423,7 @@ func getSettingNewInlineKeyboardMarkup(update tgbotapi.Update) tgbotapi.InlineKe
 	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
 	buttonrows = append(buttonrows, make([]tgbotapi.InlineKeyboardButton, 0))
 
-	if maps[Setting_Verify] == "0" {
+	if maps[setting_Verify] == "0" {
 		buttonrows[0] = append(buttonrows[0], tgbotapi.NewInlineKeyboardButtonData("□审核开关", "enable"))
 	} else {
 		buttonrows[0] = append(buttonrows[0], tgbotapi.NewInlineKeyboardButtonData("■审核开关", "disable"))
