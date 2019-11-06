@@ -313,7 +313,15 @@ func newChatMembers(update tgbotapi.Update) {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("我是机器人 %s, 很高兴为您服务!", getUserName(user)))
 			_, _ = bot.Send(msg)
 		} else {
+
+			if user.IsBot {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID,"抓到一只机器人")
+				_, _ = bot.Send(msg)
+				return
+			}
+
 			verifyData(update, user)
+
 		}
 	}
 }
